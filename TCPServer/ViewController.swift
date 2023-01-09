@@ -37,6 +37,7 @@ class ViewController: UIViewController {
         }else {
             isStart = true
             TcpServer.startServer(at: 2158)
+            
             sender.setTitle("cencel", for: .normal)
         }
     }

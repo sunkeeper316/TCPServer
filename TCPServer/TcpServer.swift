@@ -5,6 +5,11 @@ import UIKit
 public class TcpServer {
     
     public static var shared:TcpServer?
+    
+//    public var connectHandler:((Bool) -> Void)?
+//    public var resultHandler:((AnalysisObject) -> Void)?
+    public var receiveHandler:((String) -> Void)?
+    
     public static func startServer(at port: UInt16) {
         shared = TcpServer(port: port)
         try! shared!.start()
@@ -72,7 +77,6 @@ public class TcpServer {
     
     private func didAccept(for connection: NWConnection) {
         print(connection.endpoint)
-//        connection.parameters = NWParameters.tcp
         connection.start(queue: .global())
         connection.stateUpdateHandler = { newState in
             switch newState {
@@ -90,12 +94,22 @@ public class TcpServer {
             }
             
         }
-        receiveHandler()
-        func receiveHandler(){
+        receiveData()
+        func receiveData(){
             connection.receive(minimumIncompleteLength: 1, maximumLength: 1024*8, completion: { data, contentContext, isComplete, error in
                 if let data = data {
-                    print(String(data: data, encoding: .utf8))
-                    receiveHandler()
+                    if let dataString = String(data: data, encoding: .utf8) {
+                        print(dataString)
+                        self.receiveHandler?(dataString)
+                        AnalysisDP4800.analysisResult(dataBuffer: dataString)
+                    }
+                    let response = "{\"error\":0}"
+                    connection.send(content: response.data(using: .utf8), completion: .contentProcessed({ error in
+                        if let error = error {
+                            print(error)
+                        }
+                    }))
+                    receiveData()
                 }
             })
         }
@@ -104,3 +118,12 @@ public class TcpServer {
     
     
 }
+
+//192.168.2.69:49159        DP4800 傳回資訊
+//State: Preparing
+//State: Ready
+//Optional("POST /sendData HTTP/1.1\r\n")
+//Optional("Host: 192.168.2.53\r\nContent-Type: application/json\r\nContent-Length: 214\r\n")
+//Optional("\r\n{\"title\":\"measure\",\"model\":\"MS4980\",\"sn\":\"0\",\"total\":\"1\",\"packet\":[{\"index\":\"1\",\"id\":\"444557\",\"nid\":\"fddf\",\"tare_weight\":\"0.0kg\",\"net_weight\":\"81.7kg\",\"height\":\"160.0cm\",\"bmi\":\"31.9\",\"time\":\"2023-01-09 16:44:54\"}]}")
+//2023-01-09 16:45:52.338415+0800 TCPServer[83029:15144607] [tcp] tcp_input [C4:1] flags=[R.] seq=7759, ack=3021553486, win=5840 state=CLOSE_WAIT rcv_nxt=7759, snd_una=3021553475
+//ERROR! State not defined!
