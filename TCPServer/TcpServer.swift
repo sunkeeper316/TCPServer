@@ -14,6 +14,11 @@ public class TcpServer {
         shared = TcpServer(port: port)
         try! shared!.start()
     }
+    public static func startServer(ip:String, port: UInt16) {
+        shared = TcpServer(ip:ip,port: port)
+        try! shared!.start()
+    }
+    
     public static func cencelServer() {
         if (shared != nil){
             shared!.listener.cancel()
@@ -25,25 +30,27 @@ public class TcpServer {
     let listener: NWListener
     
     public init(port: UInt16) {
-//        let port = NWEndpoint.Port(rawValue: port)!
-//        let host = NWEndpoint.Host("127.0.0.1")
-        let TLS_opts = NWProtocolTLS.Options()
-           let TCP_opts = NWProtocolTCP.Options()
-               TCP_opts.disableECN         = true    // Explicit Congestion Notification
-               TCP_opts.enableKeepalive    = false   // Send Keep-Alive packets
-               TCP_opts.connectionTimeout  = 60      // Connection handshake timeout (seconds)
-               TCP_opts.connectionDropTime = 5       // Seconds TCP will do packet retransmission
+        self.listener = try! NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: port)!)
+    }
+    public init(ip: String ,port: UInt16) {
+        let port = NWEndpoint.Port(rawValue: port)!
+        let host = NWEndpoint.Host(ip)
+//        let TLS_opts = NWProtocolTLS.Options()
+//           let TCP_opts = NWProtocolTCP.Options()
+//               TCP_opts.disableECN         = true    // Explicit Congestion Notification
+//               TCP_opts.enableKeepalive    = false   // Send Keep-Alive packets
+//               TCP_opts.connectionTimeout  = 60      // Connection handshake timeout (seconds)
+//               TCP_opts.connectionDropTime = 5       // Seconds TCP will do packet retransmission
 //        let sec_opts = TLS_opts.securityProtocolOptions
         // I’m completely stuck in the sparse documentation at this point!
         // For testing purposes, I have a self-signed certificate in the System keychain with
         // the identifier: “Server.local”
         // How do I enable TLS using this (or a real) certificate?
-           let Parameters = NWParameters(tls: TLS_opts, tcp: TCP_opts)
-               Parameters.allowLocalEndpointReuse = true
-//        let parameters = NWParameters.tcp.copy()
-//        parameters.requiredLocalEndpoint = .hostPort(host: host, port: self.port)
-//        self.listener = try! NWListener(using: Parameters, on: NWEndpoint.Port(rawValue: port)!)
-        self.listener = try! NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: port)!)
+//           let Parameters = NWParameters(tls: TLS_opts, tcp: TCP_opts)
+//               Parameters.allowLocalEndpointReuse = true
+        let parameters = NWParameters.tcp.copy()
+        parameters.requiredLocalEndpoint = .hostPort(host: host, port: port)
+        self.listener = try! NWListener(using: parameters)
     }
     public  func start() throws {
         self.listener.stateUpdateHandler = self.stateDidChange(to:)

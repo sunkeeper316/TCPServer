@@ -22,7 +22,7 @@ class ViewController: UIViewController {
 ////            run(ip: ip)
 ////            TcpConnect.run()
 //        }
-        let ips = UIDevice.current.getIFAddresses()
+        let ips = UIDevice.current.getIPv4Addresses()
         for ip in ips {
             
             lbIP.text! += "\(ip)\n"
